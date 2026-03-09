@@ -1,0 +1,2 @@
+﻿src/components/Layout/DashboardLayout.tsx(4,10): error TS6133: 'LayoutDashboard' is declared but its value is never read.
+src/pages/Dashboard/DashboardHome.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
