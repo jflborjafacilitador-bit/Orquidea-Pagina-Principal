@@ -9,14 +9,23 @@ import { DashboardLayout } from './components/Layout/DashboardLayout';
 import { DashboardHome } from './pages/Dashboard/DashboardHome';
 import { AdminPanel } from './pages/Admin/AdminPanel';
 import { Facturacion } from './pages/Admin/Facturacion';
+import { LegacyAccess } from './pages/Admin/LegacyAccess';
 import { PagoExitoso } from './pages/Premium/PagoExitoso';
 import { Precios } from './pages/Premium/Precios';
+import { Canjear } from './pages/Canjear';
+import { JaboneriBasica } from './pages/Dashboard/JaboneriBasica';
+import { JaboneriAvanzada } from './pages/Dashboard/JaboneriAvanzada';
+import { VelasBasica } from './pages/Dashboard/VelasBasica';
+import { VelasAvanzada } from './pages/Dashboard/VelasAvanzada';
+import { MoldesSilicon } from './pages/Dashboard/MoldesSilicon';
+import { MarketingDigital } from './pages/Dashboard/MarketingDigital';
 
 export interface UserProfile {
   id: string;
   email: string | null;
-  role: 'free' | 'premium' | 'admin';
+  role: string;
   displayName: string | null;
+  niveles?: Record<string, number>;
 }
 
 function App() {
@@ -34,7 +43,6 @@ function App() {
         setLoading(false);
       }
     });
-
     return () => unsubscribe();
   }, []);
 
@@ -42,21 +50,13 @@ function App() {
     try {
       const docRef = doc(db, 'users', uid);
       const docSnap = await getDoc(docRef);
-
       if (docSnap.exists()) {
         setProfile(docSnap.data() as UserProfile);
       } else {
-        // Fallback for users that just registered and might not have a profile doc yet
-        // In a real app, a Cloud Function creates this doc on user registration
-        setProfile({
-          id: uid,
-          email: auth.currentUser?.email || '',
-          role: 'free',
-          displayName: auth.currentUser?.displayName || ''
-        });
+        setProfile({ id: uid, email: auth.currentUser?.email || '', role: 'free', displayName: auth.currentUser?.displayName || '' });
       }
     } catch (error) {
-      console.error("Error loading profile:", error);
+      console.error('Error loading profile:', error);
     } finally {
       setLoading(false);
     }
@@ -74,57 +74,46 @@ function App() {
 
   const isAdmin = profile?.role === 'admin';
 
+  // Helper para rutas protegidas de usuario
+  const userRoute = (element: React.ReactElement) =>
+    user ? (
+      <DashboardLayout isAdmin={isAdmin} userProfile={profile}>
+        {element}
+      </DashboardLayout>
+    ) : <Navigate to="/login" />;
+
+  // Helper para rutas protegidas de admin
+  const adminRoute = (element: React.ReactElement) =>
+    user && isAdmin ? (
+      <DashboardLayout isAdmin={isAdmin} userProfile={profile}>
+        {element}
+      </DashboardLayout>
+    ) : <Navigate to="/" />;
+
   return (
     <Routes>
-      {/* Rutas Públicas */}
-      <Route path="/" element={
-        <DashboardLayout isPublicView={true}>
-          <DashboardHome />
-        </DashboardLayout>
-      } />
-
+      {/* Públicas */}
+      <Route path="/" element={<DashboardLayout isPublicView={true}><DashboardHome /></DashboardLayout>} />
       <Route path="/login" element={!user ? <AuthComponent /> : <Navigate to="/dashboard" />} />
+      <Route path="/precios" element={<DashboardLayout isPublicView={!user} isAdmin={isAdmin} userProfile={profile || undefined}><Precios /></DashboardLayout>} />
+      <Route path="/canjear" element={<Canjear />} />
 
-      <Route path="/precios" element={
-        <DashboardLayout isPublicView={!user} isAdmin={isAdmin} userProfile={profile || undefined}>
-          <Precios />
-        </DashboardLayout>
-      } />
+      {/* Dashboard privado */}
+      <Route path="/dashboard" element={userRoute(<DashboardHome isLoggedView={true} userProfile={profile} />)} />
+      <Route path="/dashboard/jaboneria-basica" element={userRoute(<JaboneriBasica userProfile={profile} />)} />
+      <Route path="/dashboard/jaboneria-avanzada" element={userRoute(<JaboneriAvanzada userProfile={profile} />)} />
+      <Route path="/dashboard/velas-basica" element={userRoute(<VelasBasica userProfile={profile} />)} />
+      <Route path="/dashboard/velas-avanzada" element={userRoute(<VelasAvanzada userProfile={profile} />)} />
+      <Route path="/dashboard/moldes-silicon" element={userRoute(<MoldesSilicon userProfile={profile} />)} />
+      <Route path="/dashboard/marketing-digital" element={userRoute(<MarketingDigital userProfile={profile} />)} />
 
-      {/* Rutas Protegidas de Usuario (Dashboard PAGO/GRATIS una vez logueado) */}
-      <Route path="/dashboard/*" element={
-        user ? (
-          <DashboardLayout isAdmin={isAdmin} userProfile={profile}>
-            <DashboardHome isLoggedView={true} userProfile={profile} />
-          </DashboardLayout>
-        ) : <Navigate to="/login" />
-      } />
+      {/* Admin */}
+      <Route path="/admin" element={adminRoute(<AdminPanel />)} />
+      <Route path="/admin/facturacion" element={adminRoute(<Facturacion />)} />
+      <Route path="/admin/legacy" element={adminRoute(<LegacyAccess />)} />
 
-      {/* Rutas Protegidas de Administrador */}
-      <Route path="/admin" element={
-        user && isAdmin ? (
-          <DashboardLayout isAdmin={isAdmin} userProfile={profile}>
-            <AdminPanel />
-          </DashboardLayout>
-        ) : <Navigate to="/" />
-      } />
-
-      <Route path="/admin/facturacion" element={
-        user && isAdmin ? (
-          <DashboardLayout isAdmin={isAdmin} userProfile={profile}>
-            <Facturacion />
-          </DashboardLayout>
-        ) : <Navigate to="/" />
-      } />
-
-      {/* Ruta de Pago Exitoso */}
-      <Route path="/pago-exitoso" element={
-        user ? (
-          <DashboardLayout isAdmin={isAdmin} userProfile={profile}>
-            <PagoExitoso />
-          </DashboardLayout>
-        ) : <Navigate to="/login" />
-      } />
+      {/* Confirmación de pago */}
+      <Route path="/pago-exitoso" element={userRoute(<PagoExitoso />)} />
     </Routes>
   );
 }

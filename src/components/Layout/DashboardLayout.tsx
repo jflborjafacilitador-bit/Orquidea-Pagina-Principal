@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { auth } from '../../firebase';
-import { LayoutDashboard, PlaySquare, ShieldAlert, LogOut, Menu, X, Sparkles, LogIn, Receipt } from 'lucide-react';
+import { LayoutDashboard, PlaySquare, ShieldAlert, LogOut, Menu, X, Sparkles, LogIn, Receipt, BookOpen, Flame, Layers, TrendingUp, UserCheck } from 'lucide-react';
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
@@ -18,11 +18,28 @@ export const DashboardLayout = ({ children, isAdmin = false, isPublicView = fals
         await auth.signOut();
     };
 
+    const role = userProfile?.role || 'free';
+
+    const hasBasic = ['cobre', 'plata', 'oro', 'legacy', 'admin', 'premium_bronce', 'premium_plata', 'premium_oro'].includes(role);
+    const hasAdvanced = ['plata', 'oro', 'admin', 'premium_plata', 'premium_oro'].includes(role);
+    const hasSpecial = ['oro', 'unico', 'admin', 'premium_oro'].includes(role);
+
     const navItems = [
-        { label: isPublicView ? 'Explorar Cursos' : 'Mis Cursos', icon: <PlaySquare size={20} />, path: isPublicView ? '/' : '/dashboard' },
+        { label: 'Inicio', icon: <LayoutDashboard size={18} />, path: '/dashboard', always: true },
+        // Jabonería
+        ...(hasBasic ? [{ label: '🧼 Jabonería Básica', icon: <BookOpen size={18} />, path: '/dashboard/jaboneria-basica' }] : []),
+        ...(hasAdvanced ? [{ label: '🧼 Jabonería Avanzada', icon: <TrendingUp size={18} />, path: '/dashboard/jaboneria-avanzada' }] : []),
+        // Velas
+        ...(hasBasic ? [{ label: '🕯️ Velas Básica', icon: <Flame size={18} />, path: '/dashboard/velas-basica' }] : []),
+        ...(hasAdvanced ? [{ label: '🕯️ Velas Avanzada', icon: <TrendingUp size={18} />, path: '/dashboard/velas-avanzada' }] : []),
+        // Especiales (Oro + Único)
+        ...(hasSpecial ? [{ label: '🧩 Moldes de Silicón', icon: <Layers size={18} />, path: '/dashboard/moldes-silicon' }] : []),
+        ...(hasSpecial ? [{ label: '📱 Marketing Digital', icon: <PlaySquare size={18} />, path: '/dashboard/marketing-digital' }] : []),
+        // Admin
         ...isAdmin ? [
-            { label: 'Panel Admin', icon: <ShieldAlert size={20} />, path: '/admin' },
-            { label: 'Facturación', icon: <Receipt size={20} />, path: '/admin/facturacion' }
+            { label: 'Panel Admin', icon: <ShieldAlert size={18} />, path: '/admin' },
+            { label: 'Facturación', icon: <Receipt size={18} />, path: '/admin/facturacion' },
+            { label: 'Acceso Legacy', icon: <UserCheck size={18} />, path: '/admin/legacy' },
         ] : []
     ];
 
