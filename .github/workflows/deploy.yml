@@ -28,8 +28,8 @@ jobs:
       - name: Desplegar a Hostinger via FTP
         uses: SamKirkland/FTP-Deploy-Action@4.3.3
         with:
-          server: ${{ secrets.FTP_HOST }}
-          username: ${{ secrets.FTP_USER }}
+          server: 217.196.54.114
+          username: u998920878.miorquidea.com
           password: ${{ secrets.FTP_PASS }}
           local-dir: ./dist/
           server-dir: /public_html/
