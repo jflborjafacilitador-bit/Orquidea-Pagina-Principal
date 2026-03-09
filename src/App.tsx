@@ -8,6 +8,8 @@ import { AuthComponent } from './components/Auth/Auth';
 import { DashboardLayout } from './components/Layout/DashboardLayout';
 import { DashboardHome } from './pages/Dashboard/DashboardHome';
 import { AdminPanel } from './pages/Admin/AdminPanel';
+import { Facturacion } from './pages/Admin/Facturacion';
+import { PagoExitoso } from './pages/Premium/PagoExitoso';
 
 export interface UserProfile {
   id: string;
@@ -92,12 +94,29 @@ function App() {
       } />
 
       {/* Rutas Protegidas de Administrador */}
-      <Route path="/admin/*" element={
+      <Route path="/admin" element={
         user && isAdmin ? (
           <DashboardLayout isAdmin={isAdmin} userProfile={profile}>
             <AdminPanel />
           </DashboardLayout>
         ) : <Navigate to="/" />
+      } />
+
+      <Route path="/admin/facturacion" element={
+        user && isAdmin ? (
+          <DashboardLayout isAdmin={isAdmin} userProfile={profile}>
+            <Facturacion />
+          </DashboardLayout>
+        ) : <Navigate to="/" />
+      } />
+
+      {/* Ruta de Pago Exitoso */}
+      <Route path="/pago-exitoso" element={
+        user ? (
+          <DashboardLayout isAdmin={isAdmin} userProfile={profile}>
+            <PagoExitoso />
+          </DashboardLayout>
+        ) : <Navigate to="/login" />
       } />
     </Routes>
   );

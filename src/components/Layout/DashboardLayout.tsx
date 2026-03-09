@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { auth } from '../../firebase';
-import { LayoutDashboard, PlaySquare, ShieldAlert, LogOut, Menu, X, Sparkles, LogIn } from 'lucide-react';
+import { LayoutDashboard, PlaySquare, ShieldAlert, LogOut, Menu, X, Sparkles, LogIn, Receipt } from 'lucide-react';
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
@@ -20,7 +20,10 @@ export const DashboardLayout = ({ children, isAdmin = false, isPublicView = fals
 
     const navItems = [
         { label: isPublicView ? 'Explorar Cursos' : 'Mis Cursos', icon: <PlaySquare size={20} />, path: isPublicView ? '/' : '/dashboard' },
-        ...isAdmin ? [{ label: 'Panel Admin', icon: <ShieldAlert size={20} />, path: '/admin' }] : []
+        ...isAdmin ? [
+            { label: 'Panel Admin', icon: <ShieldAlert size={20} />, path: '/admin' },
+            { label: 'Facturación', icon: <Receipt size={20} />, path: '/admin/facturacion' }
+        ] : []
     ];
 
     return (

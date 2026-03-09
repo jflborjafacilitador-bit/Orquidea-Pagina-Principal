@@ -140,14 +140,16 @@ export const DashboardHome = ({ isLoggedView = false, userProfile }: DashboardHo
                             Suscríbete ahora por <strong style={{ color: 'var(--color-primary)' }}>$499 MXN / mes</strong> y accede a todos los videos y metodologías.
                         </p>
 
-                        <button
+                        <a
                             className="btn btn-primary pulse"
-                            style={{ width: '100%', padding: '1rem', fontSize: '1.1rem', marginBottom: '1rem', display: 'flex', justifyContent: 'center', gap: '0.8rem' }}
-                            onClick={() => alert("Aquí abriríamos el Checkout de Mercado Pago // Cuando el pago sea exitoso, tu backend (Cloud Function) actualiza a 'premium' el perfil en Firestore.")}
+                            href={import.meta.env.VITE_MP_CHECKOUT_URL || 'https://www.mercadopago.com.mx/subscriptions/checkout?preapproval_plan_id=TU_PLAN_ID'}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ width: '100%', padding: '1rem', fontSize: '1.1rem', marginBottom: '1rem', display: 'flex', justifyContent: 'center', gap: '0.8rem', textDecoration: 'none', borderRadius: 'var(--radius-sm)' }}
                         >
                             <CreditCard size={24} />
                             Suscribirse con Mercado Pago
-                        </button>
+                        </a>
 
                         {!isLoggedView && (
                             <p style={{ fontSize: '0.9rem', color: 'var(--color-gray-800)' }}>
