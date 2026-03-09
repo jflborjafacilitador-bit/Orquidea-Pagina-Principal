@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { db } from '../../firebase';
 import { collection, getDocs } from 'firebase/firestore';
-import { Play, Lock, CreditCard } from 'lucide-react';
+import { Play, Lock } from 'lucide-react';
+import { Precios } from '../Premium/Precios';
 
 interface CourseVideo {
     id: string;
@@ -106,56 +107,48 @@ export const DashboardHome = ({ isLoggedView = false, userProfile }: DashboardHo
                 </div>
             )}
 
-            {/* Paywall Popup Mockup */}
+            {/* Paywall Popup - 3 planes de suscripción */}
             {showPaywall && (
                 <div className="animate-fade-in" style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(5px)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
-                    padding: '1rem'
+                    backgroundColor: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)',
+                    display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 1000,
+                    padding: '1.5rem', overflowY: 'auto'
                 }}>
-                    <div className="glass" style={{
-                        backgroundColor: 'var(--color-white)', maxWidth: '500px', width: '100%',
-                        padding: '3rem 2rem', borderRadius: 'var(--radius-lg)', textAlign: 'center',
-                        position: 'relative', boxShadow: '0 25px 50px -12px rgba(172, 17, 62, 0.25)'
+                    <div style={{
+                        backgroundColor: 'var(--color-gray-100)', maxWidth: '1000px', width: '100%',
+                        padding: '2.5rem 2rem', borderRadius: 'var(--radius-lg)',
+                        position: 'relative', marginTop: '2rem', marginBottom: '2rem'
                     }}>
                         <button
                             onClick={() => setShowPaywall(null)}
-                            style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', color: 'var(--color-gray-800)' }}
+                            style={{
+                                position: 'absolute', top: '1rem', right: '1rem',
+                                color: 'var(--color-gray-800)', fontSize: '1.5rem', zIndex: 10,
+                                width: '36px', height: '36px', borderRadius: '50%',
+                                backgroundColor: 'rgba(0,0,0,0.05)'
+                            }}
                         >
                             ✕
                         </button>
 
-                        <div style={{
-                            width: '80px', height: '80px', backgroundColor: 'var(--color-light-bg)', borderRadius: '50%',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem auto',
-                            color: 'var(--color-primary)'
-                        }}>
-                            <Lock size={40} />
+                        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                            <div style={{
+                                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                width: '56px', height: '56px', borderRadius: '50%',
+                                backgroundColor: 'var(--color-light-bg)', color: 'var(--color-primary)', marginBottom: '1rem'
+                            }}>
+                                <Lock size={28} />
+                            </div>
+                            <h2 style={{ fontSize: '1.6rem', color: 'var(--color-text-dark)', marginBottom: '0.5rem' }}>
+                                Desbloquea "{showPaywall.title}"
+                            </h2>
+                            <p style={{ color: 'var(--color-gray-800)' }}>
+                                Este contenido es exclusivo para miembros. Elige el plan que mejor se adapte a ti.
+                            </p>
                         </div>
 
-                        <h2 style={{ fontSize: '1.8rem', color: 'var(--color-text-dark)', marginBottom: '1rem' }}>Desbloquea este curso</h2>
-                        <p style={{ color: 'var(--color-gray-800)', marginBottom: '2rem', lineHeight: 1.6 }}>
-                            El curso <strong>{showPaywall.title}</strong> es exclusivo para miembros Premium de Orquídea.
-                            Suscríbete ahora por <strong style={{ color: 'var(--color-primary)' }}>$499 MXN / mes</strong> y accede a todos los videos y metodologías.
-                        </p>
-
-                        <a
-                            className="btn btn-primary pulse"
-                            href={import.meta.env.VITE_MP_CHECKOUT_URL || 'https://www.mercadopago.com.mx/subscriptions/checkout?preapproval_plan_id=TU_PLAN_ID'}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{ width: '100%', padding: '1rem', fontSize: '1.1rem', marginBottom: '1rem', display: 'flex', justifyContent: 'center', gap: '0.8rem', textDecoration: 'none', borderRadius: 'var(--radius-sm)' }}
-                        >
-                            <CreditCard size={24} />
-                            Suscribirse con Mercado Pago
-                        </a>
-
-                        {!isLoggedView && (
-                            <p style={{ fontSize: '0.9rem', color: 'var(--color-gray-800)' }}>
-                                Ya estás suscrito? <a href="/login" style={{ fontWeight: 600 }}>Inicia sesión aquí</a>
-                            </p>
-                        )}
+                        <Precios onClose={() => setShowPaywall(null)} showTitle={false} />
                     </div>
                 </div>
             )}

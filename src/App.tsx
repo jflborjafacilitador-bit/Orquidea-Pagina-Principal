@@ -10,6 +10,7 @@ import { DashboardHome } from './pages/Dashboard/DashboardHome';
 import { AdminPanel } from './pages/Admin/AdminPanel';
 import { Facturacion } from './pages/Admin/Facturacion';
 import { PagoExitoso } from './pages/Premium/PagoExitoso';
+import { Precios } from './pages/Premium/Precios';
 
 export interface UserProfile {
   id: string;
@@ -83,6 +84,12 @@ function App() {
       } />
 
       <Route path="/login" element={!user ? <AuthComponent /> : <Navigate to="/dashboard" />} />
+
+      <Route path="/precios" element={
+        <DashboardLayout isPublicView={!user} isAdmin={isAdmin} userProfile={profile || undefined}>
+          <Precios />
+        </DashboardLayout>
+      } />
 
       {/* Rutas Protegidas de Usuario (Dashboard PAGO/GRATIS una vez logueado) */}
       <Route path="/dashboard/*" element={
