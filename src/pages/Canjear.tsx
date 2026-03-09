@@ -36,27 +36,34 @@ export const Canjear = () => {
             const codeDoc = snap.docs[0];
             const codeData = codeDoc.data();
 
-            // Verificar que no haya expirado
+            // Verificar expiración
             if (codeData.expiry && new Date(codeData.expiry) < new Date()) {
                 setResultado({ ok: false, msg: 'Este código ha expirado. Contacta a Orquídea para más información.' });
                 return;
             }
 
-            // Buscar usuario por email en la colección users
+            // Buscar usuario por email
             const userQ = query(collection(db, 'users'), where('email', '==', email.trim().toLowerCase()));
             const userSnap = await getDocs(userQ);
 
             if (userSnap.empty) {
-                setResultado({ ok: false, msg: 'No encontramos una cuenta con ese email. Primero regístrate en miorquidea.com/login, luego vuelve aquí a canjear.' });
+                setResultado({ ok: false, msg: 'No encontramos una cuenta con ese email. Primero regístrate en miorquidea.com/login y luego vuelve aquí a canjear.' });
                 return;
             }
 
             const userDoc = userSnap.docs[0];
+
+            // Aplicar legacy con categorías y tier del código
+            const categories: string[] = codeData.categories ?? [];
+            const tier: string = codeData.tier ?? 'cobre';
+
             await setDoc(doc(db, 'users', userDoc.id), {
                 role: 'legacy',
+                legacyTier: tier,
+                legacyCategories: categories,
                 legacyExpiry: oneYearFromNow(),
                 legacyGrantedAt: new Date().toISOString(),
-                niveles: { jaboneria_basica: 0, jaboneria_avanzada: 0, velas_basica: 0, velas_avanzada: 0 },
+                niveles: Object.fromEntries(categories.map((c: string) => [c, 0])),
             }, { merge: true });
 
             // Marcar código como usado
@@ -66,7 +73,7 @@ export const Canjear = () => {
                 usadoAt: new Date().toISOString()
             }, { merge: true });
 
-            setResultado({ ok: true, msg: '🎉 ¡Código canjeado exitosamente! Ya tienes acceso al contenido básico por 1 año. Inicia sesión para comenzar.' });
+            setResultado({ ok: true, msg: '🎉 ¡Código canjeado! Ya tienes acceso por 1 año a las secciones incluidas en tu código. Inicia sesión para comenzar.' });
         } catch (e) {
             console.error(e);
             setResultado({ ok: false, msg: 'Error al procesar el código. Intenta de nuevo.' });
@@ -139,7 +146,10 @@ export const Canjear = () => {
                         backgroundColor: resultado.ok ? 'rgba(76,175,80,0.1)' : 'rgba(244,67,54,0.1)',
                         display: 'flex', alignItems: 'flex-start', gap: '0.8rem', textAlign: 'left'
                     }}>
-                        {resultado.ok ? <CheckCircle size={20} color="#4CAF50" style={{ flexShrink: 0, marginTop: 2 }} /> : <AlertCircle size={20} color="#f44336" style={{ flexShrink: 0, marginTop: 2 }} />}
+                        {resultado.ok
+                            ? <CheckCircle size={20} color="#4CAF50" style={{ flexShrink: 0, marginTop: 2 }} />
+                            : <AlertCircle size={20} color="#f44336" style={{ flexShrink: 0, marginTop: 2 }} />
+                        }
                         <p style={{ fontSize: '0.9rem', lineHeight: 1.5, color: 'var(--color-text-dark)', margin: 0 }}>{resultado.msg}</p>
                     </div>
                 )}

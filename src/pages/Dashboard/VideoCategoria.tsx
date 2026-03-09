@@ -32,6 +32,8 @@ interface Props {
     userProfile: {
         role?: PlanRole;
         niveles?: Record<string, number>;
+        legacyCategories?: string[];
+        legacyTier?: 'cobre' | 'plata';
     } | null;
     hasLevels?: boolean; // false for "unico" plan categories
 }
@@ -53,7 +55,20 @@ export const VideoCategoria = ({ category, categoryLabel, userProfile, hasLevels
 
     const userRole = (userProfile?.role || 'free') as PlanRole;
     const userNivel = userProfile?.niveles?.[category] ?? 0;
-    const hasAccess = CATEGORY_ACCESS[category]?.includes(userRole) || false;
+
+    // Legacy access: check if this specific category is in their allowed list
+    const isLegacy = userRole === 'legacy';
+    const legacyCats = userProfile?.legacyCategories ?? [];
+    const legacyTier = userProfile?.legacyTier ?? 'cobre';
+    // Avanzada categories require legacyTier = 'plata'
+    const advancedCats: CategoryKey[] = ['jaboneria_avanzada', 'velas_avanzada'];
+    const legacyHasAccess = isLegacy &&
+        legacyCats.includes(category) &&
+        (advancedCats.includes(category) ? legacyTier === 'plata' : true);
+
+    const hasAccess = userRole === 'admin' ||
+        (!isLegacy && CATEGORY_ACCESS[category]?.includes(userRole)) ||
+        legacyHasAccess;
 
     useEffect(() => {
         fetchVideos();
