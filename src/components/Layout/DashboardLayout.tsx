@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { auth } from '../../firebase';
-import { LayoutDashboard, PlaySquare, ShieldAlert, LogOut, Menu, X, Sparkles, LogIn, Receipt, BookOpen, Flame, Layers, TrendingUp, UserCheck, Link2 } from 'lucide-react';
+import { LayoutDashboard, PlaySquare, ShieldAlert, LogOut, Menu, X, LogIn, Receipt, BookOpen, Flame, Layers, TrendingUp, UserCheck, Link2, CreditCard } from 'lucide-react';
+import type { MapaSuscripciones, GrupoCategoria } from '../../types/suscripciones';
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
@@ -19,22 +20,38 @@ export const DashboardLayout = ({ children, isAdmin = false, isPublicView = fals
     };
 
     const role = userProfile?.role || 'free';
+    const subs = userProfile?.suscripciones ?? {};
 
-    const hasBasic = ['cobre', 'plata', 'oro', 'legacy', 'admin', 'premium_bronce', 'premium_plata', 'premium_oro'].includes(role);
-    const hasAdvanced = ['plata', 'oro', 'admin', 'premium_plata', 'premium_oro'].includes(role);
-    const hasSpecial = ['oro', 'unico', 'admin', 'premium_oro'].includes(role);
+    const hasSub = (g: string) => subs[g]?.activa === true;
+    const hasPlata = (g: string) => hasSub(g) && (subs[g]?.plan === 'plata' || subs[g]?.plan === 'oro');
+
+    // Legacy access
+    const isLegacy = role === 'legacy';
+    const legacyCats: string[] = userProfile?.legacyCategories ?? [];
+    const legacyTier: string = userProfile?.legacyTier ?? 'cobre';
+    const legacyHas = (cat: string) => isLegacy && legacyCats.includes(cat);
+    const legacyHasAdv = (cat: string) => legacyHas(cat) && legacyTier === 'plata';
+
+    const showBasicJab = isAdmin || hasSub('jaboneria') || legacyHas('jaboneria_basica');
+    const showAdvJab = isAdmin || hasPlata('jaboneria') || legacyHasAdv('jaboneria_avanzada');
+    const showBasicVel = isAdmin || hasSub('velas') || legacyHas('velas_basica');
+    const showAdvVel = isAdmin || hasPlata('velas') || legacyHasAdv('velas_avanzada');
+    const showMoldes = isAdmin || hasSub('moldes') || legacyHas('moldes_silicon');
+    const showMkt = isAdmin || hasSub('marketing') || legacyHas('marketing_digital');
+    const isLoggedIn = !!userProfile && role !== 'free';
 
     const navItems = [
         { label: 'Inicio', icon: <LayoutDashboard size={18} />, path: '/dashboard', always: true },
+        ...(isLoggedIn ? [{ label: '📋 Mis Suscripciones', icon: <CreditCard size={18} />, path: '/dashboard/mis-suscripciones' }] : []),
         // Jabonería
-        ...(hasBasic ? [{ label: '🧼 Jabonería Básica', icon: <BookOpen size={18} />, path: '/dashboard/jaboneria-basica' }] : []),
-        ...(hasAdvanced ? [{ label: '🧼 Jabonería Avanzada', icon: <TrendingUp size={18} />, path: '/dashboard/jaboneria-avanzada' }] : []),
+        ...(showBasicJab ? [{ label: '🧼 Jabonería Básica', icon: <BookOpen size={18} />, path: '/dashboard/jaboneria-basica' }] : []),
+        ...(showAdvJab ? [{ label: '🧼 Jabonería Avanzada', icon: <TrendingUp size={18} />, path: '/dashboard/jaboneria-avanzada' }] : []),
         // Velas
-        ...(hasBasic ? [{ label: '🕯️ Velas Básica', icon: <Flame size={18} />, path: '/dashboard/velas-basica' }] : []),
-        ...(hasAdvanced ? [{ label: '🕯️ Velas Avanzada', icon: <TrendingUp size={18} />, path: '/dashboard/velas-avanzada' }] : []),
-        // Especiales (Oro + Único)
-        ...(hasSpecial ? [{ label: '🧩 Moldes de Silicón', icon: <Layers size={18} />, path: '/dashboard/moldes-silicon' }] : []),
-        ...(hasSpecial ? [{ label: '📱 Marketing Digital', icon: <PlaySquare size={18} />, path: '/dashboard/marketing-digital' }] : []),
+        ...(showBasicVel ? [{ label: '🕯️ Velas Básica', icon: <Flame size={18} />, path: '/dashboard/velas-basica' }] : []),
+        ...(showAdvVel ? [{ label: '🕯️ Velas Avanzada', icon: <TrendingUp size={18} />, path: '/dashboard/velas-avanzada' }] : []),
+        // Especiales
+        ...(showMoldes ? [{ label: '🧩 Moldes de Silicón', icon: <Layers size={18} />, path: '/dashboard/moldes-silicon' }] : []),
+        ...(showMkt ? [{ label: '📱 Marketing Digital', icon: <PlaySquare size={18} />, path: '/dashboard/marketing-digital' }] : []),
         // Admin
         ...isAdmin ? [
             { label: 'Panel Admin', icon: <ShieldAlert size={18} />, path: '/admin' },

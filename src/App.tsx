@@ -22,12 +22,17 @@ import { VelasAvanzada } from './pages/Dashboard/VelasAvanzada';
 import { MoldesSilicon } from './pages/Dashboard/MoldesSilicon';
 import { MarketingDigital } from './pages/Dashboard/MarketingDigital';
 
+import { MisSuscripciones } from './pages/Dashboard/MisSuscripciones';
+
 export interface UserProfile {
   id: string;
   email: string | null;
   role: string;
   displayName: string | null;
-  niveles?: Record<string, number>;
+  suscripciones?: Record<string, { plan: string; nivel: number; activa: boolean; desde?: string }>;
+  legacyCategories?: string[];
+  legacyTier?: string;
+  legacyExpiry?: string;
 }
 
 function App() {
@@ -103,6 +108,7 @@ function App() {
 
       {/* Dashboard privado */}
       <Route path="/dashboard" element={userRoute(<DashboardHome isLoggedView={true} userProfile={profile} />)} />
+      <Route path="/dashboard/mis-suscripciones" element={userRoute(<MisSuscripciones />)} />
       <Route path="/dashboard/jaboneria-basica" element={userRoute(<JaboneriBasica userProfile={profile} />)} />
       <Route path="/dashboard/jaboneria-avanzada" element={userRoute(<JaboneriAvanzada userProfile={profile} />)} />
       <Route path="/dashboard/velas-basica" element={userRoute(<VelasBasica userProfile={profile} />)} />

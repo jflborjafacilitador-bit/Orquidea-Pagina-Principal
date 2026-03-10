@@ -3,6 +3,8 @@ import { db } from '../../firebase';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { Play, Lock } from 'lucide-react';
 import { NivelProgreso } from './NivelProgreso';
+import { tieneAcceso, nivelParaCategoria } from '../../types/suscripciones';
+import type { MapaSuscripciones } from '../../types/suscripciones';
 
 export type CategoryKey =
     | 'jaboneria_basica'
@@ -31,56 +33,52 @@ interface Props {
     categoryLabel: string;
     userProfile: {
         role?: PlanRole;
-        niveles?: Record<string, number>;
+        suscripciones?: MapaSuscripciones;
+        // Legacy fields
         legacyCategories?: string[];
         legacyTier?: 'cobre' | 'plata';
     } | null;
-    hasLevels?: boolean; // false for "unico" plan categories
+    hasLevels?: boolean;
 }
 
-// Which roles can access which categories
-const CATEGORY_ACCESS: Record<CategoryKey, PlanRole[]> = {
-    jaboneria_basica: ['cobre', 'plata', 'oro', 'legacy', 'admin', 'premium_bronce', 'premium_plata', 'premium_oro'],
-    jaboneria_avanzada: ['plata', 'oro', 'admin', 'premium_plata', 'premium_oro'],
-    velas_basica: ['cobre', 'plata', 'oro', 'legacy', 'admin', 'premium_bronce', 'premium_plata', 'premium_oro'],
-    velas_avanzada: ['plata', 'oro', 'admin', 'premium_plata', 'premium_oro'],
-    moldes_silicon: ['oro', 'unico', 'admin', 'premium_oro'],
-    marketing_digital: ['oro', 'unico', 'admin', 'premium_oro'],
-};
+// No-levels categories
+const NO_LEVELS: CategoryKey[] = ['moldes_silicon', 'marketing_digital'];
 
-export const VideoCategoria = ({ category, categoryLabel, userProfile, hasLevels = true }: Props) => {
+export const VideoCategoria = ({ category, categoryLabel, userProfile, hasLevels }: Props) => {
     const [videos, setVideos] = useState<Video[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeVideo, setActiveVideo] = useState<Video | null>(null);
 
     const userRole = (userProfile?.role || 'free') as PlanRole;
-    const userNivel = userProfile?.niveles?.[category] ?? 0;
+    const subs = userProfile?.suscripciones;
 
-    // Legacy access: check if this specific category is in their allowed list
+    // Determine if user has access — check suscripciones model, legacy, and admin
+    const isAdmin = userRole === 'admin';
     const isLegacy = userRole === 'legacy';
     const legacyCats = userProfile?.legacyCategories ?? [];
     const legacyTier = userProfile?.legacyTier ?? 'cobre';
-    // Avanzada categories require legacyTier = 'plata'
     const advancedCats: CategoryKey[] = ['jaboneria_avanzada', 'velas_avanzada'];
-    const legacyHasAccess = isLegacy &&
-        legacyCats.includes(category) &&
+    const legacyOk = isLegacy && legacyCats.includes(category) &&
         (advancedCats.includes(category) ? legacyTier === 'plata' : true);
 
-    const hasAccess = userRole === 'admin' ||
-        (!isLegacy && CATEGORY_ACCESS[category]?.includes(userRole)) ||
-        legacyHasAccess;
+    // Primary access check from suscripciones map
+    const subAccess = tieneAcceso(category, subs, userRole);
+    const hasAccess = isAdmin || legacyOk || subAccess;
 
-    useEffect(() => {
-        fetchVideos();
-    }, [category]);
+    // Level for this category
+    const userNivel = isAdmin ? 99 : (isLegacy ? 0 : nivelParaCategoria(category, subs));
+
+    // Whether levels apply
+    const useLevels = hasLevels !== false && !NO_LEVELS.includes(category);
+
+    useEffect(() => { fetchVideos(); }, [category]);
 
     const fetchVideos = async () => {
         try {
             const q = query(collection(db, 'videos'), where('category', '==', category));
             const snapshot = await getDocs(q);
             const data: Video[] = [];
-            snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() } as Video));
-            // Sort by nivelRequerido, then by title
+            snapshot.forEach(d => data.push({ id: d.id, ...d.data() } as Video));
             data.sort((a, b) => a.nivelRequerido - b.nivelRequerido || a.title.localeCompare(b.title));
             setVideos(data);
         } catch (err) {
@@ -96,8 +94,8 @@ export const VideoCategoria = ({ category, categoryLabel, userProfile, hasLevels
                 <Lock size={48} color="var(--color-primary)" style={{ marginBottom: '1rem' }} />
                 <h2 style={{ color: 'var(--color-primary)' }}>Contenido no incluido en tu plan</h2>
                 <p style={{ color: 'var(--color-gray-800)', marginTop: '0.5rem' }}>
-                    {categoryLabel} no está disponible en tu suscripción actual.
-                    <br />Considera actualizar tu plan para acceder.
+                    {categoryLabel} no está incluida en tu suscripción actual.
+                    <br />Suscríbete a esta área para acceder.
                 </p>
             </div>
         );
@@ -105,8 +103,8 @@ export const VideoCategoria = ({ category, categoryLabel, userProfile, hasLevels
 
     if (loading) return <div className="pulse">Cargando {categoryLabel}...</div>;
 
-    const unlockedVideos = videos.filter(v => !hasLevels || v.nivelRequerido <= userNivel);
-    const lockedVideos = videos.filter(v => hasLevels && v.nivelRequerido > userNivel);
+    const unlockedVideos = videos.filter(v => !useLevels || v.nivelRequerido <= userNivel);
+    const lockedVideos = videos.filter(v => useLevels && v.nivelRequerido > userNivel);
 
     return (
         <div>
@@ -114,7 +112,7 @@ export const VideoCategoria = ({ category, categoryLabel, userProfile, hasLevels
                 <h1 style={{ color: 'var(--color-primary)', fontSize: '2rem', marginBottom: '0.5rem' }}>
                     {categoryLabel}
                 </h1>
-                {hasLevels && (
+                {useLevels && (
                     <NivelProgreso
                         nivelActual={userNivel}
                         totalDesbloqueados={unlockedVideos.length}
@@ -123,19 +121,10 @@ export const VideoCategoria = ({ category, categoryLabel, userProfile, hasLevels
                 )}
             </div>
 
-            {/* Active Video Player */}
             {activeVideo && (
-                <div className="glass-dark animate-slide-up" style={{
-                    marginBottom: '2rem', padding: '1rem', borderRadius: 'var(--radius-md)',
-                    boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
-                }}>
+                <div className="glass-dark animate-slide-up" style={{ marginBottom: '2rem', padding: '1rem', borderRadius: 'var(--radius-md)', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
                     <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', borderRadius: 'var(--radius-sm)' }}>
-                        <iframe
-                            src={activeVideo.video_url}
-                            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 0 }}
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                        />
+                        <iframe src={activeVideo.video_url} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 0 }} allowFullScreen />
                     </div>
                     <div style={{ padding: '1rem 0.5rem 0.5rem' }}>
                         <h2 style={{ color: 'var(--color-accent)', fontSize: '1.4rem', marginBottom: '0.4rem' }}>{activeVideo.title}</h2>
@@ -144,7 +133,6 @@ export const VideoCategoria = ({ category, categoryLabel, userProfile, hasLevels
                 </div>
             )}
 
-            {/* Unlocked Videos */}
             {unlockedVideos.length > 0 && (
                 <>
                     <h3 style={{ color: 'var(--color-text-dark)', marginBottom: '1rem', fontSize: '1rem', fontWeight: 600 }}>
@@ -158,7 +146,6 @@ export const VideoCategoria = ({ category, categoryLabel, userProfile, hasLevels
                 </>
             )}
 
-            {/* Locked Videos (next levels) */}
             {lockedVideos.length > 0 && (
                 <>
                     <h3 style={{ color: 'var(--color-gray-800)', marginBottom: '1rem', fontSize: '1rem', fontWeight: 600 }}>
@@ -181,53 +168,24 @@ export const VideoCategoria = ({ category, categoryLabel, userProfile, hasLevels
     );
 };
 
-interface VideoCardProps {
-    video: Video;
-    isLocked: boolean;
-    isActive: boolean;
-    onClick: () => void;
-}
+interface VideoCardProps { video: Video; isLocked: boolean; isActive: boolean; onClick: () => void; }
 
 const VideoCard = ({ video, isLocked, isActive, onClick }: VideoCardProps) => (
-    <div
-        className="glass animate-fade-in"
-        style={{
-            borderRadius: 'var(--radius-md)', overflow: 'hidden', cursor: isLocked ? 'default' : 'pointer',
-            opacity: isLocked ? 0.6 : 1, display: 'flex', flexDirection: 'column',
-            border: isActive ? '2px solid var(--color-primary)' : '1px solid rgba(0,0,0,0.05)',
-            transition: 'var(--transition)',
-        }}
+    <div className="glass animate-fade-in"
+        style={{ borderRadius: 'var(--radius-md)', overflow: 'hidden', cursor: isLocked ? 'default' : 'pointer', opacity: isLocked ? 0.6 : 1, display: 'flex', flexDirection: 'column', border: isActive ? '2px solid var(--color-primary)' : '1px solid rgba(0,0,0,0.05)', transition: 'var(--transition)' }}
         onClick={onClick}
         onMouseEnter={e => { if (!isLocked) { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = 'var(--shadow-lg)'; } }}
         onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = ''; }}
     >
-        <div style={{
-            height: '160px', backgroundColor: isLocked ? '#ccc' : 'var(--color-accent)',
-            backgroundImage: video.thumbnail_url ? `url(${video.thumbnail_url})` : 'none',
-            backgroundSize: 'cover', backgroundPosition: 'center',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative'
-        }}>
+        <div style={{ height: '160px', backgroundColor: isLocked ? '#ccc' : 'var(--color-accent)', backgroundImage: video.thumbnail_url ? `url(${video.thumbnail_url})` : 'none', backgroundSize: 'cover', backgroundPosition: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
             {isLocked ? (
-                <div style={{
-                    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-                    backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                }}>
-                    <div style={{
-                        backgroundColor: 'rgba(255,255,255,0.9)', padding: '0.6rem', borderRadius: '50%',
-                        color: 'var(--color-primary)'
-                    }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ backgroundColor: 'rgba(255,255,255,0.9)', padding: '0.6rem', borderRadius: '50%', color: 'var(--color-primary)' }}>
                         <Lock size={20} />
                     </div>
                 </div>
-            ) : (
-                !video.thumbnail_url && <Play size={40} color="white" opacity={0.5} />
-            )}
-            <div style={{
-                position: 'absolute', top: '8px', right: '8px',
-                backgroundColor: 'rgba(0,0,0,0.6)', color: 'white',
-                padding: '0.2rem 0.6rem', borderRadius: 'var(--radius-full)',
-                fontSize: '0.7rem', fontWeight: 700
-            }}>
+            ) : (!video.thumbnail_url && <Play size={40} color="white" opacity={0.5} />)}
+            <div style={{ position: 'absolute', top: '8px', right: '8px', backgroundColor: 'rgba(0,0,0,0.6)', color: 'white', padding: '0.2rem 0.6rem', borderRadius: 'var(--radius-full)', fontSize: '0.7rem', fontWeight: 700 }}>
                 Nv. {video.nivelRequerido}
             </div>
         </div>
