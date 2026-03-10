@@ -60,13 +60,12 @@ export const DashboardLayout = ({ children, isAdmin = false, isPublicView = fals
             >
                 {isSidebarOpen && (
                     <>
-                        <div style={{ padding: '2rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.8rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                            <div style={{
-                                background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))',
-                                borderRadius: '8px', padding: '6px', color: 'white'
-                            }}>
-                                <Sparkles size={24} />
-                            </div>
+                        <div style={{ padding: '1.5rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.8rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                            <img
+                                src="/Logo orquidea.png"
+                                alt="Orquídea"
+                                style={{ width: '42px', height: '42px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }}
+                            />
                             <h2 style={{ fontSize: '1.2rem', margin: 0, fontWeight: 700, letterSpacing: '0.5px' }}>Orquídea</h2>
                         </div>
 
