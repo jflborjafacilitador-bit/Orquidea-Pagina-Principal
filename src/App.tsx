@@ -10,9 +10,11 @@ import { DashboardHome } from './pages/Dashboard/DashboardHome';
 import { AdminPanel } from './pages/Admin/AdminPanel';
 import { Facturacion } from './pages/Admin/Facturacion';
 import { LegacyAccess } from './pages/Admin/LegacyAccess';
+import { Referidos } from './pages/Admin/Referidos';
 import { PagoExitoso } from './pages/Premium/PagoExitoso';
 import { Precios } from './pages/Premium/Precios';
 import { Canjear } from './pages/Canjear';
+import { Referido } from './pages/Referido';
 import { JaboneriBasica } from './pages/Dashboard/JaboneriBasica';
 import { JaboneriAvanzada } from './pages/Dashboard/JaboneriAvanzada';
 import { VelasBasica } from './pages/Dashboard/VelasBasica';
@@ -97,6 +99,7 @@ function App() {
       <Route path="/login" element={!user ? <AuthComponent /> : <Navigate to="/dashboard" />} />
       <Route path="/precios" element={<DashboardLayout isPublicView={!user} isAdmin={isAdmin} userProfile={profile || undefined}><Precios /></DashboardLayout>} />
       <Route path="/canjear" element={<Canjear />} />
+      <Route path="/r/:codigo" element={<Referido />} />
 
       {/* Dashboard privado */}
       <Route path="/dashboard" element={userRoute(<DashboardHome isLoggedView={true} userProfile={profile} />)} />
@@ -111,6 +114,7 @@ function App() {
       <Route path="/admin" element={adminRoute(<AdminPanel />)} />
       <Route path="/admin/facturacion" element={adminRoute(<Facturacion />)} />
       <Route path="/admin/legacy" element={adminRoute(<LegacyAccess />)} />
+      <Route path="/admin/referidos" element={adminRoute(<Referidos />)} />
 
       {/* Confirmación de pago */}
       <Route path="/pago-exitoso" element={userRoute(<PagoExitoso />)} />
