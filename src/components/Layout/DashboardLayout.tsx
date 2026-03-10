@@ -1,8 +1,10 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { auth } from '../../firebase';
-import { LayoutDashboard, PlaySquare, ShieldAlert, LogOut, Menu, X, LogIn, Receipt, BookOpen, Flame, Layers, TrendingUp, UserCheck, Link2, CreditCard } from 'lucide-react';
+import { LayoutDashboard, PlaySquare, ShieldAlert, LogOut, Menu, X, LogIn, Receipt, BookOpen, Flame, Layers, TrendingUp, UserCheck, Link2, CreditCard, CalendarDays } from 'lucide-react';
 import type { MapaSuscripciones, GrupoCategoria } from '../../types/suscripciones';
+import { useCategoria } from '../../context/CategoriaContext';
+import type { TabCategoria } from '../../context/CategoriaContext';
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
@@ -14,6 +16,8 @@ interface DashboardLayoutProps {
 export const DashboardLayout = ({ children, isAdmin = false, isPublicView = false, userProfile }: DashboardLayoutProps) => {
     const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
     const location = useLocation();
+    const { activeTab, setActiveTab } = useCategoria();
+    const isHomePage = location.pathname === '/' || location.pathname === '/dashboard';
 
     const handleLogout = async () => {
         await auth.signOut();
@@ -52,10 +56,18 @@ export const DashboardLayout = ({ children, isAdmin = false, isPublicView = fals
         // Especiales
         ...(showMoldes ? [{ label: '🧩 Moldes de Silicón', icon: <Layers size={18} />, path: '/dashboard/moldes-silicon' }] : []),
         ...(showMkt ? [{ label: '📱 Marketing Digital', icon: <PlaySquare size={18} />, path: '/dashboard/marketing-digital' }] : []),
+        // Mis Clases (Oro or Platino subscribers)
+        ...(() => {
+            const hasOroPlatino = ['jaboneria', 'velas'].some(
+                g => subs[g]?.activa && (subs[g]?.plan === 'oro' || subs[g]?.plan === 'platino')
+            );
+            return (isAdmin || hasOroPlatino) ? [{ label: '🎓 Mis Clases', icon: <CalendarDays size={18} />, path: '/dashboard/mis-clases' }] : [];
+        })(),
         // Admin
         ...isAdmin ? [
             { label: 'Panel Admin', icon: <ShieldAlert size={18} />, path: '/admin' },
             { label: 'Facturación', icon: <Receipt size={18} />, path: '/admin/facturacion' },
+            { label: 'Calendario', icon: <CalendarDays size={18} />, path: '/admin/calendario' },
             { label: 'Acceso Legacy', icon: <UserCheck size={18} />, path: '/admin/legacy' },
             { label: 'Referidos', icon: <Link2 size={18} />, path: '/admin/referidos' },
         ] : []
@@ -167,7 +179,21 @@ export const DashboardLayout = ({ children, isAdmin = false, isPublicView = fals
                         {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
                     </button>
 
-                    <div style={{ flex: 1 }}></div>
+                    {/* Category tabs — only on home pages */}
+                    {isHomePage && (
+                        <div style={{ flex: 1, display: 'flex', justifyContent: 'center', gap: '0.3rem', flexWrap: 'wrap' }}>
+                            {([['velas', '🕯️', 'Velas'], ['jaboneria', '🧼', 'Jabonería'], ['moldes', '🧩', 'Moldes'], ['marketing', '📱', 'Marketing']] as [TabCategoria, string, string][]).map(([key, emoji, label]) => (
+                                <button
+                                    key={key}
+                                    onClick={() => setActiveTab(key)}
+                                    style={{ padding: '0.4rem 0.9rem', borderRadius: 'var(--radius-full)', border: '1.5px solid', borderColor: activeTab === key ? 'var(--color-primary)' : 'rgba(0,0,0,0.12)', backgroundColor: activeTab === key ? 'var(--color-primary)' : 'transparent', color: activeTab === key ? 'white' : 'var(--color-gray-800)', fontSize: '0.82rem', fontWeight: activeTab === key ? 700 : 500, cursor: 'pointer', transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                                >
+                                    {emoji} {label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                    {!isHomePage && <div style={{ flex: 1 }} />}
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         {userProfile && (

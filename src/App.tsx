@@ -23,6 +23,10 @@ import { MoldesSilicon } from './pages/Dashboard/MoldesSilicon';
 import { MarketingDigital } from './pages/Dashboard/MarketingDigital';
 
 import { MisSuscripciones } from './pages/Dashboard/MisSuscripciones';
+import { MisClases } from './pages/Dashboard/MisClases';
+import { AdminCalendario } from './pages/Admin/AdminCalendario';
+import { CategoriaProvider } from './context/CategoriaContext';
+import React from 'react';
 
 export interface UserProfile {
   id: string;
@@ -98,33 +102,37 @@ function App() {
     ) : <Navigate to="/" />;
 
   return (
-    <Routes>
-      {/* Públicas */}
-      <Route path="/" element={<DashboardLayout isPublicView={true}><DashboardHome /></DashboardLayout>} />
-      <Route path="/login" element={!user ? <AuthComponent /> : <Navigate to="/dashboard" />} />
-      <Route path="/precios" element={<DashboardLayout isPublicView={!user} isAdmin={isAdmin} userProfile={profile || undefined}><Precios /></DashboardLayout>} />
-      <Route path="/canjear" element={<Canjear />} />
-      <Route path="/r/:codigo" element={<Referido />} />
+    <CategoriaProvider>
+      <Routes>
+        {/* Públicas */}
+        <Route path="/" element={<DashboardLayout isPublicView={true}><DashboardHome /></DashboardLayout>} />
+        <Route path="/login" element={!user ? <AuthComponent /> : <Navigate to="/dashboard" />} />
+        <Route path="/precios" element={<DashboardLayout isPublicView={!user} isAdmin={isAdmin} userProfile={profile || undefined}><Precios /></DashboardLayout>} />
+        <Route path="/canjear" element={<Canjear />} />
+        <Route path="/r/:codigo" element={<Referido />} />
 
-      {/* Dashboard privado */}
-      <Route path="/dashboard" element={userRoute(<DashboardHome isLoggedView={true} userProfile={profile} />)} />
-      <Route path="/dashboard/mis-suscripciones" element={userRoute(<MisSuscripciones />)} />
-      <Route path="/dashboard/jaboneria-basica" element={userRoute(<JaboneriBasica userProfile={profile} />)} />
-      <Route path="/dashboard/jaboneria-avanzada" element={userRoute(<JaboneriAvanzada userProfile={profile} />)} />
-      <Route path="/dashboard/velas-basica" element={userRoute(<VelasBasica userProfile={profile} />)} />
-      <Route path="/dashboard/velas-avanzada" element={userRoute(<VelasAvanzada userProfile={profile} />)} />
-      <Route path="/dashboard/moldes-silicon" element={userRoute(<MoldesSilicon userProfile={profile} />)} />
-      <Route path="/dashboard/marketing-digital" element={userRoute(<MarketingDigital userProfile={profile} />)} />
+        {/* Dashboard privado */}
+        <Route path="/dashboard" element={userRoute(<DashboardHome isLoggedView={true} userProfile={profile} />)} />
+        <Route path="/dashboard/mis-suscripciones" element={userRoute(<MisSuscripciones />)} />
+        <Route path="/dashboard/mis-clases" element={userRoute(<MisClases userProfile={profile} />)} />
+        <Route path="/dashboard/jaboneria-basica" element={userRoute(<JaboneriBasica userProfile={profile} />)} />
+        <Route path="/dashboard/jaboneria-avanzada" element={userRoute(<JaboneriAvanzada userProfile={profile} />)} />
+        <Route path="/dashboard/velas-basica" element={userRoute(<VelasBasica userProfile={profile} />)} />
+        <Route path="/dashboard/velas-avanzada" element={userRoute(<VelasAvanzada userProfile={profile} />)} />
+        <Route path="/dashboard/moldes-silicon" element={userRoute(<MoldesSilicon userProfile={profile} />)} />
+        <Route path="/dashboard/marketing-digital" element={userRoute(<MarketingDigital userProfile={profile} />)} />
 
-      {/* Admin */}
-      <Route path="/admin" element={adminRoute(<AdminPanel />)} />
-      <Route path="/admin/facturacion" element={adminRoute(<Facturacion />)} />
-      <Route path="/admin/legacy" element={adminRoute(<LegacyAccess />)} />
-      <Route path="/admin/referidos" element={adminRoute(<Referidos />)} />
+        {/* Admin */}
+        <Route path="/admin" element={adminRoute(<AdminPanel />)} />
+        <Route path="/admin/facturacion" element={adminRoute(<Facturacion />)} />
+        <Route path="/admin/calendario" element={adminRoute(<AdminCalendario />)} />
+        <Route path="/admin/legacy" element={adminRoute(<LegacyAccess />)} />
+        <Route path="/admin/referidos" element={adminRoute(<Referidos />)} />
 
-      {/* Confirmación de pago */}
-      <Route path="/pago-exitoso" element={userRoute(<PagoExitoso />)} />
-    </Routes>
+        {/* Confirmación de pago */}
+        <Route path="/pago-exitoso" element={userRoute(<PagoExitoso />)} />
+      </Routes>
+    </CategoriaProvider >
   );
 }
 
